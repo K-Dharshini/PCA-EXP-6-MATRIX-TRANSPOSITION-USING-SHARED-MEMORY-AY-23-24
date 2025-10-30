@@ -317,6 +317,7 @@ int main(int argc, char **argv)
 {
     // set up device
     int dev = 0;
+    double iStart,iElaps;
     cudaDeviceProp deviceProp;
     CHECK(cudaGetDeviceProperties(&deviceProp, dev));
     printf("%s at ", argv[0]);
@@ -343,10 +344,11 @@ int main(int argc, char **argv)
     printf("<<< grid (%d,%d) block (%d,%d)>>>\n", grid.x, grid.y, block.x,
             block.y);
 
-    double iStart,iElaps;
+   // double iStart,iElaps;
 
     // allocate device memory
     int *d_C;
+    iStart=seconds();
     CHECK(cudaMalloc((int**)&d_C, nBytes));
     int *gpuRef  = (int *)malloc(nBytes);
 
@@ -356,7 +358,7 @@ int main(int argc, char **argv)
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
     if(iprintf)  printData("setRowReadRow       ", gpuRef, nx * ny);
-    CHECK(cudaMemset(d_C, 0, nBytes));
+CHECK(cudaMemset(d_C, 0, nBytes));
     setColReadCol<<<grid, block>>>(d_C);
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
@@ -391,6 +393,8 @@ int main(int argc, char **argv)
     CHECK(cudaMemcpy(gpuRef, d_C, nBytes, cudaMemcpyDeviceToHost));
 
     if(iprintf)  printData("setRowReadColDynPad ", gpuRef, nx * ny);
+    iElaps=seconds()-iStart;
+    printf("Elapsed time %f sec: \n", iElaps);
 
     // free host and device memory
     CHECK(cudaFree(d_C));
@@ -403,11 +407,15 @@ int main(int argc, char **argv)
 
 !nvcc -arch=sm_75 mattranpose.cu -o mattran
 !nvprof ./mattran
+!nvprof --print-gpu-trace ./mattran
 ```
 
 ## OUTPUT:
-<img width="1737" height="351" alt="image" src="https://github.com/user-attachments/assets/c0a019ab-bfae-4426-97b1-18fe70ddcb47" />
-<img width="1034" height="654" alt="image" src="https://github.com/user-attachments/assets/af52330f-1190-43fd-9d95-b585228b2b67" />
+<img width="1667" height="347" alt="image" src="https://github.com/user-attachments/assets/86dc7cd6-4ffa-435e-b01c-8fd7437c3e2f" />
+<img width="1097" height="662" alt="image" src="https://github.com/user-attachments/assets/73608558-7729-408c-b394-047777f46f8f" />
+<img width="1658" height="347" alt="image" src="https://github.com/user-attachments/assets/74d95e10-da47-4487-b91a-8da34d370b88" />
+<img width="1637" height="552" alt="image" src="https://github.com/user-attachments/assets/11b440a6-7674-4c13-a49d-47fb342dd5ed" />
+<img width="1671" height="116" alt="image" src="https://github.com/user-attachments/assets/26f02cfa-c007-478d-9624-188bcdb5ff34" />
 
 ## RESULT:
-Thus the program has been executed by using CUDA to transpose a matrix. It is observed that there are variations in shared memory and global memory implementation. The elapsed times are recorded as – 1.2 ms for global memory and 0.3 ms for shared memory implementation.
+Thus the program has been executed by using CUDA to transpose a matrix. It is observed that there are variations in shared memory and global memory implementation. The elapsed times are recorded as – 0.004843 sec for global memory and 0.003674 sec for shared memory implementation.
